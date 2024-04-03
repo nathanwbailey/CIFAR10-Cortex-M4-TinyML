@@ -1,7 +1,9 @@
 """Neural Network Created and Quantized for tflite-micro."""
 from typing import Generator
 from typing import cast
+from pathlib import Path
 import os
+import time
 import tensorflow as tf # type: ignore[import-untyped]
 from tensorflow import keras # type: ignore[reportAttributeAccessIssue,import-untyped] # pylint: disable=no-member,import-error,no-name-in-module
 import numpy as np
@@ -62,13 +64,25 @@ model.compile(optimizer=optimizer, loss=loss_function, metrics=['accuracy'])
 
 lr_scheduler = keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy', factor=0.1, patience=5, verbose=1, min_lr=0, min_delta=0.001)
 early_stopping = keras.callbacks.EarlyStopping(monitor='val_accuracy', mode='max', verbose=1, patience=8, min_delta=0.001)
+
+logging_directory_name = "tensorboard_log_dir"
+if not Path(logging_directory_name).exists():
+    Path(logging_directory_name).mkdir()
+root_logdir = os.path.join(os.curdir, logging_directory_name)
+
+def get_run_logdir(root_logdir: str) -> str: 
+    run_id = time.strftime("linear_run_%Y_%m_%d-%H_%M_%S") 
+    return os.path.join(root_logdir, run_id)
+
+tensorboard_cb = keras.callbacks.TensorBoard(get_run_logdir(root_logdir))
+
 model.fit(
     train_images,
     train_labels,
     epochs=100,
     batch_size=32,
     validation_data=(val_images, val_labels),
-    callbacks = [lr_scheduler, early_stopping]
+    callbacks = [lr_scheduler, early_stopping, tensorboard_cb]
 )
 model.save('cifar_classifier')
 

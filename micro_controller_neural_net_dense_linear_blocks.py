@@ -1,7 +1,9 @@
 """Neural Network Created and Quantized for tflite-micro."""
 from typing import Generator
 from typing import cast
+from pathlib import Path
 import os
+import time
 import tensorflow as tf # type: ignore[import-untyped]
 from tensorflow import keras # type: ignore[reportAttributeAccessIssue,import-untyped] # pylint: disable=no-member,import-error,no-name-in-module
 import numpy as np
@@ -40,7 +42,7 @@ class LinearBottleneckBlock(keras.layers.Layer):
 
 class DenseLinearBottleneckBlock(keras.layers.Layer):
     """Custom Dense Linear Bottleneck Layer from EtinyNet."""
-    def __init__(self, out_channels: int, kernel_size: int, padding: str = 'same', strides: int = 1, downsample: keras.layers.Layer | None = None, bias: bool = True) -> None:
+    def __init__(self, out_channels: int, kernel_size: int, padding: str = 'same', strides: int = 1, downsample: bool = False, bias: bool = True) -> None:
         super().__init__()
         self.depthwise_conv_layer_a = keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding=padding, strides=strides, use_bias=bias)
         self.depthwise_a_batch_norm_layer = keras.layers.BatchNormalization()
@@ -52,7 +54,15 @@ class DenseLinearBottleneckBlock(keras.layers.Layer):
         self.depthwise_b_batch_norm_layer = keras.layers.BatchNormalization()
 
         self.activation = keras.layers.Activation('relu')
-        self.downsample = downsample
+        self.downsample_layers = None
+        if downsample:
+            self.downsample_layers = keras.Sequential(
+                [
+                    keras.layers.Conv2D(out_channels, kernel_size=1, padding='same', strides=1, use_bias=True),
+                    keras.layers.BatchNormalization()
+                ]
+            )
+
 
     def call(self, input_tensor: tf.Tensor, training: bool = True) -> tf.Tensor:
         """Forward Pass for the Dense Linear Bottleneck Layer."""
@@ -60,8 +70,8 @@ class DenseLinearBottleneckBlock(keras.layers.Layer):
         depthwise_a_result = self.depthwise_a_batch_norm_layer(self.depthwise_conv_layer_a(input_tensor), training=training)
         pointwise_result = self.activation(self.pointwise_batch_norm(self.pointwise_layer(depthwise_a_result), training=training))
         depthwise_b_result = self.depthwise_b_batch_norm_layer(self.depthwise_conv_layer_b(pointwise_result), training=training)
-        if self.downsample:
-            residual = self.downsample(input_tensor)
+        if self.downsample_layers:
+            residual = self.downsample_layers(input_tensor, training=training)
         output = self.activation(residual + depthwise_b_result)
         return output
 
@@ -75,34 +85,19 @@ model = keras.Sequential(
         DenseLinearBottleneckBlock(
             out_channels=32,
             kernel_size=3,
-            downsample=keras.Sequential(
-                [
-                    keras.layers.Conv2D(32, kernel_size=1, padding='same', strides=1, use_bias=True),
-                    keras.layers.BatchNormalization()
-                ]
-            ),
+            downsample=True
         ),
         DenseLinearBottleneckBlock(
             out_channels=64,
             kernel_size=3,
-            downsample=keras.Sequential(
-                [
-                    keras.layers.Conv2D(64, kernel_size=1, padding='same', strides=1, use_bias=True),
-                    keras.layers.BatchNormalization()
-                ]
-            ),
+            downsample=True
         ),
         keras.layers.MaxPooling2D(pool_size=2),
-        DenseLinearBottleneckBlock(out_channels=64, kernel_size=3, downsample=None),
+        DenseLinearBottleneckBlock(out_channels=64, kernel_size=3, downsample=False),
         DenseLinearBottleneckBlock(
             out_channels=128,
             kernel_size=3,
-            downsample=keras.Sequential(
-                [
-                    keras.layers.Conv2D(128, kernel_size=1, padding='same', strides=1, use_bias=True),
-                    keras.layers.BatchNormalization()
-                ]
-            ),
+            downsample=True
         ),
         keras.layers.GlobalAveragePooling2D(),
         keras.layers.Dropout(0.3),
@@ -119,13 +114,25 @@ model.compile(optimizer=optimizer, loss=loss_function, metrics=['accuracy'])
 
 lr_scheduler = keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy', factor=0.1, patience=5, verbose=1, min_lr=0, min_delta=0.001)
 early_stopping = keras.callbacks.EarlyStopping(monitor='val_accuracy', mode='max', verbose=1, patience=8, min_delta=0.001)
+
+logging_directory_name = "tensorboard_log_dir"
+if not Path(logging_directory_name).exists():
+    Path(logging_directory_name).mkdir()
+root_logdir = os.path.join(os.curdir, logging_directory_name)
+
+def get_run_logdir(root_logdir: str) -> str: 
+    run_id = time.strftime("dense_run_%Y_%m_%d-%H_%M_%S") 
+    return os.path.join(root_logdir, run_id)
+
+tensorboard_cb = keras.callbacks.TensorBoard(get_run_logdir(root_logdir))
+
 model.fit(
     train_images,
     train_labels,
-    epochs=100,
+    epochs=3,
     batch_size=32,
     validation_data=(val_images, val_labels),
-    callbacks = [lr_scheduler, early_stopping]
+    callbacks = [lr_scheduler, early_stopping, tensorboard_cb]
 )
 model.save('cifar_classifier_dense')
 

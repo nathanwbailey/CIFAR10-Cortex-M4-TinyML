@@ -1,3 +1,4 @@
 cifar_classifier
 venv
 .mypy_cache
+tensorboard_log_dir
