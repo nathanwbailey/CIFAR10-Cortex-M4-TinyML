@@ -129,7 +129,7 @@ tensorboard_cb = keras.callbacks.TensorBoard(get_run_logdir(root_logdir))
 model.fit(
     train_images,
     train_labels,
-    epochs=3,
+    epochs=100,
     batch_size=32,
     validation_data=(val_images, val_labels),
     callbacks = [lr_scheduler, early_stopping, tensorboard_cb]
