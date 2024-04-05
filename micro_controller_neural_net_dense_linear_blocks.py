@@ -120,9 +120,10 @@ if not Path(logging_directory_name).exists():
     Path(logging_directory_name).mkdir()
 root_logdir = os.path.join(os.curdir, logging_directory_name)
 
-def get_run_logdir(root_logdir: str) -> str: 
+def get_run_logdir(root_logdir_in: str) -> str:
+    """Return a folder for the run to use in Tensorboard."""
     run_id = time.strftime("dense_run_%Y_%m_%d-%H_%M_%S") 
-    return os.path.join(root_logdir, run_id)
+    return os.path.join(root_logdir_in, run_id)
 
 tensorboard_cb = keras.callbacks.TensorBoard(get_run_logdir(root_logdir))
 
@@ -142,8 +143,8 @@ model.save('cifar_classifier_dense')
 cifar_ds = tf.data.Dataset.from_tensor_slices(train_images)
 def representative_dataset_function() -> Generator[list, None, None]:
     """Create a representative dataset for TFLite Conversion."""
-    for i_value in cifar_ds.batch(1).take(100):
-        i_value_fp32 = tf.cast(i_value, tf.float32)
+    for input_value in cifar_ds.batch(1).take(100):
+        i_value_fp32 = tf.cast(input_value, tf.float32)
         yield [i_value_fp32]
 
 converter = tf.lite.TFLiteConverter.from_saved_model('cifar_classifier_dense')
@@ -174,14 +175,14 @@ output_quant_scale = output_quantization_details['scales'][0]
 input_quant_zero_point = input_quantization_details['zero_points'][0]
 output_quant_zero_point = output_quantization_details['zero_points'][0]
 
-def classify_sample_tflite(interpreter: tf.lite.Interpreter, input_details: dict, output_details: dict, i_scale, o_scale, i_zero_point, o_zero_point, input_data: np.ndarray) -> tf.Tensor:
+def classify_sample_tflite(interpreter: tf.lite.Interpreter, input_d: dict, output_d: dict, i_scale: np.float32, o_scale: np.float32, i_zero_point: np.int32, o_zero_point: np.int32, input_data: np.ndarray) -> tf.Tensor:
     """Classify an example in TFLite."""
     input_data = input_data.reshape((1,32,32,3))
     input_fp32 = tf.cast(input_data, tf.float32)
     input_int8 = tf.cast((input_fp32 / i_scale) + i_zero_point, tf.int8)
-    interpreter.set_tensor(input_details["index"], input_int8)
+    interpreter.set_tensor(input_d["index"], input_int8)
     interpreter.invoke()
-    output_int8 = interpreter.get_tensor(output_details["index"])[0]
+    output_int8 = interpreter.get_tensor(output_d["index"])[0]
     output_fp32 = cast(tf.Tensor, tf.cast((output_int8 - o_zero_point) * o_scale, tf.float32))
     return output_fp32
 
