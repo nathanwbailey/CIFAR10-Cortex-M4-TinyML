@@ -57,6 +57,8 @@ model = keras.Sequential([
     keras.layers.Dense(units=10, kernel_regularizer=keras.regularizers.L2(1e-3))
 ])
 
+model.summary(expand_nested=True)
+
 loss_function = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 LEARNING_RATE = 0.01
 optimizer = keras.optimizers.Adam(learning_rate=LEARNING_RATE)
