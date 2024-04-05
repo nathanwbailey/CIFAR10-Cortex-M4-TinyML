@@ -4,7 +4,7 @@
 
 This project implements a lightweight CNN for CIFAR-10 based on linearwise blocks from the EtinyNet network (https://ojs.aaai.org/index.php/AAAI/article/view/20387). 
 
-This is implemeted in Keras and then converted to TFLite. We then deploy this using TfLite-Micro on an Arduino Nano 33 BLE Sense Rev 2 which has a Cortex-M4F Microcontroller.
+This is implemented in Keras and then converted to TFLite. This is deployed using TfLite-Micro on an Arduino Nano 33 BLE Sense Rev 2 which has a Cortex-M4F Microcontroller.
 
 ### Blogs
 
@@ -14,8 +14,8 @@ In addition to the code I wrote a blog on this project:
 
 The code is located in the following files:
 
-* micro_controller_neural_net.py - Implements the CNN using linearwise blocks in keras, converts it to tflite and outputs an image in a C header.
-* micro_controller_neural_net_dense_linear_blocks.py - Implements the CNN using dense linearwise blocks in keras, converts it to tflite and outputs an image in a C header.
+* micro_controller_neural_net.py - Implements the CNN using linearwise blocks in Keras, converts it to tflite and outputs an image in a C header.
+* micro_controller_neural_net_dense_linear_blocks.py - Implements the CNN using dense linearwise blocks in Keras, converts it to tflite and outputs an image in a C header.
 * cortex_m4_program/cortex_m4_program.ino - Runs the CNN on the Cortex-M4F, classifies the example outputted in the python file.
 
 ### Requirements
