@@ -58,7 +58,7 @@ class DenseLinearBottleneckBlock(keras.layers.Layer):
         if downsample:
             self.downsample_layers = keras.Sequential(
                 [
-                    keras.layers.Conv2D(out_channels, kernel_size=1, padding='same', strides=1, use_bias=True),
+                    keras.layers.Conv2D(out_channels, kernel_size=1, padding='same', strides=strides, use_bias=True),
                     keras.layers.BatchNormalization()
                 ]
             )
