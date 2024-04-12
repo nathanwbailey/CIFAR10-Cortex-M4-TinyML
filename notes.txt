@@ -4,4 +4,4 @@ Linear:
 
 Dense:
     - Size: 82.375
-    - Accuracy: 0.7465
+    - Accuracy: 0.7776
