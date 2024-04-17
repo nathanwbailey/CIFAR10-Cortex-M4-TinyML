@@ -1,6 +1,6 @@
 Linear:
     - Size: 60.3515625
-    - Accuracy: 0.7374
+    - Accuracy: 0.7647
 
 Dense:
     - Size: 82.375
