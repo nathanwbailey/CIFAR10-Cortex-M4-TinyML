@@ -1,6 +1,5 @@
 """Neural Network Created and Quantized for tflite-micro."""
 from typing import Generator
-from typing import cast
 from pathlib import Path
 import os
 import time
