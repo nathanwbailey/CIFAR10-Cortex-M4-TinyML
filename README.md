@@ -8,7 +8,9 @@ This is implemented in Keras and then converted to TFLite. This is deployed usin
 
 ### Blogs
 
-In addition to the code I wrote a blog on this project:
+In addition to the code I wrote a blog on this project which can be found in the link below:
+
+https://nathanbaileyw.medium.com/deploying-convolutional-neural-networks-on-microcontrollers-a-tinyml-blog-5f9b4fa37864
 
 ### Where is the code?
 
