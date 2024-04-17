@@ -137,7 +137,7 @@ def classify_sample_tflite(interpreter: tf.lite.Interpreter, input_d: dict, outp
     interpreter.set_tensor(input_d["index"], input_int8)
     interpreter.invoke()
     output_int8 = interpreter.get_tensor(output_d["index"])[0]
-    output_fp32 = cast(tf.Tensor, tf.cast((output_int8 - o_zero_point) * o_scale, tf.float32))
+    output_fp32 = tf.convert_to_tensor((output_int8 - o_zero_point) * o_scale, dtype=tf.float32)
     return output_fp32
 
 num_correct_examples = 0
